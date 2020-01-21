@@ -1,0 +1,100 @@
+PUT _template/template_logs
+{
+  "index_patterns": [
+    "logs-*"
+  ],
+  "settings": {
+    "number_of_replicas": 0,
+    "number_of_shards": 1, 
+    "analysis": {
+      "analyzer": {
+        "html": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase"
+          ],
+          "char_filter": [
+            "html_strip"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "logs": {
+      "properties": {
+        "referrer": {
+          "type": "join",
+          "relations": {
+            "referred_to": "referred_by"
+          }
+        },
+        "body": {
+          "type": "text",
+          "fields": {
+            "html": {
+              "analyzer": "html",
+              "type": "text"
+            }
+          }
+        },
+        "url": {
+          "type": "text",
+          "analyzer": "simple",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 256
+            }
+          }
+        },
+        "geoip": {
+          "type": "object", 
+          "properties": {
+            "coordinates": {
+              "type":"geo_point"
+            }
+          }
+        },
+        "client_ip":{
+          "type": "ip"
+        },
+        "related_content":{
+          "type": "nested"
+        },
+        "useragent":{
+          "type": "text",
+          "fields": {
+            "keyword":{
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+PUT logs-2018-10-01
+{
+  "settings": {
+    "index.routing.allocation.require.temp":"warm"
+  }
+}
+
+GET _cat/shards?v
+
+PUT logs-2018-10-02/logs/0
+{
+  "url":"https://linuxacademy.com/courses/elastic-certified-engineer",
+  "response_code":"200",
+  "bytes":16384,
+  "client_ip":"10.0.1.100",
+  "geoip.coordinates":"32.9259,97.2531",
+  "useragent":"Mozilla/5.0 (Macintosh; Intel Mac OS X x.y; rv:42.0) Gecko/20100101 Firefox/42.0",
+  "method":"GET",
+  "request_time":84,
+  "body":"<body><h1>Elastic Certified Engineer</h1></body>",
+  "referrer name":"referred_to"
+}
